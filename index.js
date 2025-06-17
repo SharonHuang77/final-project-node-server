@@ -18,7 +18,7 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:5173", "https://kambaz-react-web-app-su25-a6.netlify.app"] 
+    origin: ["http://localhost:5173", "spectacular-faloodeh-27b361.netlify.app"] 
   })
  );
  
