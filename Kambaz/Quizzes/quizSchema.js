@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const quizSchema = new mongoose.Schema(
   {
     _id: {
-      type: String, // since you're using custom ID like "quiz123"
+      type: String,
       required: true
     },
     title: {
