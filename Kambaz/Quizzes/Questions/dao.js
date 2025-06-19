@@ -1,6 +1,7 @@
 
 import QuestionModel from "./model.js";
 import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
 
 export function findQuestionsForQuiz(quizId) {
   return QuestionModel.find({ quiz: quizId }).sort({ _id: 1 });
@@ -11,14 +12,14 @@ export function findQuestionById(questionId) {
 }
 
 export function createQuestion(question) {
-  delete question._id;
-  return QuestionModel.create(question);
+  const newQuestion = { ...question, _id: uuidv4() };
+  return QuestionModel.create(newQuestion);
 }
 
 export function updateQuestion(questionId, questionUpdates) {
   return QuestionModel.findOneAndUpdate(
-    { _id: questionId }, 
-    questionUpdates, 
+    { _id: questionId },
+    questionUpdates,
     { new: true }
   );
 }
@@ -26,6 +27,7 @@ export function updateQuestion(questionId, questionUpdates) {
 export function deleteQuestion(questionId) {
   return QuestionModel.findOneAndDelete({ _id: questionId });
 }
+
 
 export function deleteQuestionsForQuiz(quizId) {
   return QuestionModel.deleteMany({ quiz: quizId });

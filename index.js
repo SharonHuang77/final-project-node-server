@@ -1,4 +1,5 @@
 import "dotenv/config";
+console.log("🧪 If you see this, import is OK.");
 import express from 'express';
 import cors from "cors";
 import session from 'express-session';
@@ -7,19 +8,21 @@ import CourseRoutes from "./Kambaz/Courses/routes.js";
 import ModuleRoutes from "./Kambaz/Modules/routes.js";
 import AssignmentRoutes from "./Kambaz/Assignments/routes.js";
 import EnrollmentsRoutes from "./Kambaz/Enrollments/routes.js";
-import QuestionRoutes from "./Kambaz/Quizzes/Questions/Questions/routes.js";
+import QuestionRoutes from "./Kambaz/Quizzes/Questions/routes.js";
 import mongoose from "mongoose";
 
-// console.log("🚀 Starting server...");
-// console.log("📊 Environment:", process.env.NODE_ENV);
-// console.log("🔗 MongoDB:", process.env.MONGO_CONNECTION_STRING);
+console.log("🚀 Starting server...");
+console.log("📊 Environment:", process.env.NODE_ENV);
+console.log("🔗 MongoDB:", process.env.MONGO_CONNECTION_STRING);
 
 
 const CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING || "mongodb://127.0.0.1:27017/kambaz";
 
 try {
+  console.time("⏱️ MongoDB connection time");
   await mongoose.connect(CONNECTION_STRING);
   console.log("✅ MongoDB connected successfully");
+  console.timeEnd("⏱️ MongoDB connection time");
 } catch (error) {
   console.error("❌ MongoDB connection failed:", error);
 }

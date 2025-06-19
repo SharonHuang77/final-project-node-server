@@ -5,10 +5,12 @@ export default function QuestionRoutes(app) {
   app.get("/api/quizzes/:quizId/questions", async (req, res) => {
     try {
       const { quizId } = req.params;
+      console.log("🟨 Fetching questions for quizId:", quizId);
       const questions = await questionsDao.findQuestionsForQuiz(quizId);
+      console.log("🟩 Found questions:", questions.length);
       res.json(questions);
     } catch (error) {
-      console.error("Error getting questions for quiz:", error);
+      console.error("❌ Error getting questions:", error);
       res.status(500).json({ error: error.message });
     }
   });
