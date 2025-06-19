@@ -7,8 +7,9 @@ import CourseRoutes from "./Kambaz/Courses/routes.js";
 import ModuleRoutes from "./Kambaz/Modules/routes.js";
 import AssignmentRoutes from "./Kambaz/Assignments/routes.js";
 import EnrollmentsRoutes from "./Kambaz/Enrollments/routes.js";
-import QuestionRoutes from "./Kambaz/Quizzes/Questions/Questions/routes.js";
+import QuestionRoutes from "./Kambaz/Quizzes/Questions/routes.js";
 import mongoose from "mongoose";
+import QuizRoutes from "./Kambaz/Quizzes/routes.js";
 
 // console.log("🚀 Starting server...");
 // console.log("📊 Environment:", process.env.NODE_ENV);
@@ -61,6 +62,7 @@ ModuleRoutes(app);
 AssignmentRoutes(app);
 EnrollmentsRoutes(app);
 QuestionRoutes(app);
+QuizRoutes(app);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
