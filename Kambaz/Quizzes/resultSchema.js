@@ -8,6 +8,10 @@ const answerSchema = new mongoose.Schema({
 }, { _id: false });
 
 const resultSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    required: true
+  },
   studentId: { 
     type: String, 
     required: true,

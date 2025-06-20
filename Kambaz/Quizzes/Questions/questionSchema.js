@@ -61,10 +61,18 @@ questionSchema.pre("save", function (next) {
       return next(new Error("True/False questions must have a boolean correct answer"));
     }
   } else if (this.type === "fill-in-blank") {
-    if (!this.correctAnswer || typeof this.correctAnswer !== "string") {
-      return next(new Error("Fill in the blank questions must have a valid correct answer"));
+    if (!this.possibleAnswers || !Array.isArray(this.possibleAnswers) || this.possibleAnswers.length === 0) {
+      return next(new Error("Fill in the blank questions must have at least one possible answer"));
     }
-  }
+    
+    const hasValidAnswers = this.possibleAnswers.every(answer => 
+      typeof answer === "string" && answer.trim().length > 0
+    );
+    
+    if (!hasValidAnswers) {
+      return next(new Error("All possible answers must be non-empty strings"));
+    }
+}
   next();
 });
 

@@ -13,6 +13,12 @@ export function findQuestionById(questionId) {
 
 export function createQuestion(question) {
   const newQuestion = { ...question, _id: uuidv4() };
+
+  console.log('Creating question with data:', newQuestion);
+  console.log('Question type:', newQuestion.type);
+  console.log('Correct answer:', newQuestion.correctAnswer);
+  console.log('Correct answer type:', typeof newQuestion.correctAnswer);
+  
   return QuestionModel.create(newQuestion);
 }
 

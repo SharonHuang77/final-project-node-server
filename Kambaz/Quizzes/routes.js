@@ -1,4 +1,5 @@
 import * as dao from "./dao.js";
+import { v4 as uuidv4 } from "uuid";
 
 export default function QuizRoutes(app) {
   app.get("/api/courses/:courseId/quizzes", async (req, res) => {
@@ -51,7 +52,8 @@ export default function QuizRoutes(app) {
     const { quizId } = req.params;
     res.json(await dao.deleteQuiz(quizId));
   });
-//s Submit quiz result
+
+  //s Submit quiz result
   app.post("/api/quizzes/:quizId/results", async (req, res) => {
     try {
     const { quizId } = req.params;
@@ -77,16 +79,22 @@ export default function QuizRoutes(app) {
   }
 });
 
-  app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
-   try {
-      const { quizId, studentId } = req.params;
-      const results = await dao.findStudentQuizResults(studentId, quizId);
-      res.json(results);
-    } catch (error) {
-      console.error("Error fetching student results:", error);
-      res.status(500).json({ error: "Failed to fetch results" });
+app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
+  console.log("Fetching results for student:", req.params.studentId, "in quiz:", req.params.quizId);
+  try {
+    const { quizId, studentId } = req.params;
+    const results = await dao.findStudentQuizResults(studentId, quizId);
+    
+    if (!results) {
+      return res.status(404).json({ error: "Result not found" });
     }
-  });
+
+    res.json(results);
+  } catch (error) {
+    console.error("Error fetching student results:", error);
+    res.status(500).json({ error: "Failed to fetch results" });
+  }
+});
 
 app.get("/api/quizzes/:quizId/results", async (req, res) => {
   try {
