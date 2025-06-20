@@ -51,26 +51,51 @@ export default function QuizRoutes(app) {
     const { quizId } = req.params;
     res.json(await dao.deleteQuiz(quizId));
   });
-
+//s Submit quiz result
   app.post("/api/quizzes/:quizId/results", async (req, res) => {
     try {
-      const { quizId } = req.params;
-      const { studentId, answers, score } = req.body;
-      await dao.storeStudentAnswer(studentId, quizId, answers, score);
-      res.json({ success: true });
-    } catch (e) {
-      console.error("Store result error ▶", e);
-      res.status(500).send(e.toString());
+    const { quizId } = req.params;
+    const { studentId, answers, score, totalPoints, timeSpent, startedAt } = req.body;
+    
+    // Get quiz details for total points
+    const quiz = await dao.findQuizById(quizId);
+    
+    const result = await dao.storeQuizResult({
+      studentId,
+      quizId,
+      courseId: quiz.course,
+      answers,
+      score,
+      totalPoints: totalPoints || quiz.points,
+      timeSpent: req.body.timeSpent || 0,
+      startedAt: startedAt || new Date()
+    });
+    res.json(result);
+  } catch (error) {
+    console.error("Error saving quiz result:", error);
+    res.status(500).json({ error: "Failed to save quiz result" });
+  }
+});
+
+  app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
+   try {
+      const { quizId, studentId } = req.params;
+      const results = await dao.findStudentQuizResults(studentId, quizId);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching student results:", error);
+      res.status(500).json({ error: "Failed to fetch results" });
     }
   });
 
-  app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
-    const { quizId, studentId } = req.params;
-    const result = await dao.findStudentResult(studentId, quizId);
-    if (!result) {
-      res.status(404).json({ error: "Result not found" });
-    } else {
-      res.json(result);
+app.get("/api/quizzes/:quizId/results", async (req, res) => {
+  try {
+      const { quizId } = req.params;
+      const results = await dao.findAllQuizResults(quizId);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching all results:", error);
+      res.status(500).json({ error: "Failed to fetch results" });
     }
   });
 }
