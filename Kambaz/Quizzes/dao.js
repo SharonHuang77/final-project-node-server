@@ -1,13 +1,23 @@
 import { v4 as uuidv4 } from "uuid";
 import model from "./model.js";
+import questionModel from "./Questions/model.js"
 
 
 export async function findQuizzesForCourse(courseId) {
   return await model.find({ course: courseId });
 }
 
-export async function findQuizById(quizId) {
-  return await model.findById(quizId);
+export const findQuizById = async (quizId) => {
+
+  console.log("▶ Fetching quiz by ID:", quizId);
+  const quiz = await model.findById(quizId).lean();
+  if (!quiz){
+    console.log("Quiz not found for ID:", quizId);
+   throw new Error("Quiz not found");
+  }
+  const questions = await questionModel.find({ quiz: quizId }).lean();
+  console.log("Found questions:", questions);
+  return { ...quiz, questions };
 }
 
 export async function createQuiz(quiz) {
@@ -26,7 +36,7 @@ export async function createQuiz(quiz) {
 
 export async function updateQuiz(quizId, updates) {
   await model.updateOne({ _id: quizId }, { $set: updates });
-  return await model.findById(quizId);
+  return await model.findById(quizId).lean();
 }
 
 export async function deleteQuiz(quizId) {
