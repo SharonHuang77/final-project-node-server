@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import model from "./model.js";
 import questionModel from "./Questions/model.js"
+import resultModel from "./resultModel.js";
 
 
 export async function findQuizzesForCourse(courseId) {
@@ -43,3 +44,35 @@ export async function deleteQuiz(quizId) {
   return await model.deleteOne({ _id: quizId });
 }
 
+export async function storeQuizResult(resultData) {
+  try {
+    // Check how many attempts the student has made
+    const previousAttempts = await resultModel.countDocuments({
+      studentId: resultData.studentId,
+      quizId: resultData.quizId
+    });
+    const newResult = await resultModel.create({
+      ...resultData,
+      attemptNumber: previousAttempts + 1,
+      percentage: (resultData.score / resultData.totalPoints) * 100
+    });
+    return newResult;
+  } catch (error) {
+    console.error("Error storing quiz result:", error);
+    throw error;
+  }
+}
+// Get student's results for a specific quiz
+export async function findStudentQuizResults(studentId, quizId) {
+  return await resultModel.find({ studentId, quizId }).sort({ submittedAt: -1 });
+}
+
+// Get all results for a quiz (for faculty)
+export async function findAllQuizResults(quizId) {
+  return await resultModel.find({ quizId }).populate('studentId').sort({ submittedAt: -1 });
+}
+
+// Get student's latest attempt
+export async function findLatestStudentResult(studentId, quizId) {
+  return await resultModel.findOne({ studentId, quizId }).sort({ attemptNumber: -1 });
+}
