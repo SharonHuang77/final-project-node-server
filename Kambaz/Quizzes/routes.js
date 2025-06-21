@@ -1,5 +1,4 @@
 import * as dao from "./dao.js";
-import { v4 as uuidv4 } from "uuid";
 
 export default function QuizRoutes(app) {
   app.get("/api/courses/:courseId/quizzes", async (req, res) => {
@@ -57,27 +56,71 @@ export default function QuizRoutes(app) {
   app.post("/api/quizzes/:quizId/results", async (req, res) => {
     try {
     const { quizId } = req.params;
-    const { studentId, answers, score, totalPoints, timeSpent, startedAt } = req.body;
-    
-    // Get quiz details for total points
-    const quiz = await dao.findQuizById(quizId);
-    
-    const result = await dao.storeQuizResult({
-      studentId,
-      quizId,
-      courseId: quiz.course,
-      answers,
-      score,
-      totalPoints: totalPoints || quiz.points,
-      timeSpent: req.body.timeSpent || 0,
-      startedAt: startedAt || new Date()
-    });
-    res.json(result);
-  } catch (error) {
-    console.error("Error saving quiz result:", error);
-    res.status(500).json({ error: "Failed to save quiz result" });
-  }
-});
+    const { 
+      studentId, 
+      courseId,
+      answers, 
+      score, 
+      totalPoints, 
+      timeSpent, 
+      startedAt,
+      submittedAt
+      } = req.body;
+
+   console.log("Received quiz submission:", {
+        quizId,
+        studentId,
+        courseId,
+        score,
+        totalPoints,
+        answersCount: answers?.length
+      });
+
+      // Validate required fields
+      if (!studentId) {
+        return res.status(400).json({ error: "studentId is required" });
+      }
+      
+      if (!courseId) {
+        return res.status(400).json({ error: "courseId is required" });
+      }
+      if (!answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: "answers array is required" });
+      }
+      if (score === undefined || score === null) {
+        return res.status(400).json({ error: "score is required" });
+      }
+      if (!totalPoints || totalPoints === 0) {
+        return res.status(400).json({ error: "totalPoints must be greater than 0" });
+      }
+
+      //Store the result
+      const result = await dao.storeQuizResult({
+        studentId,
+        quizId,
+        courseId,
+        answers,
+        score,
+        totalPoints,
+        timeSpent: timeSpent || 0,
+        startedAt: startedAt ? new Date(startedAt) : new Date(),
+        submittedAt: submittedAt ? new Date(submittedAt) : new Date()
+      });
+      console.log("Quiz result stored successfully:", result._id);
+      res.json(result);
+    } catch (error) {
+      console.error("Error saving quiz result:", error);
+      
+      // Send appropriate error response based on error type
+      if (error.message.includes("Maximum attempts")) {
+        res.status(400).json({ error: error.message });
+      } else if (error.message.includes("required")) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to save quiz result" });
+      }
+    }
+  });
 
 app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
   console.log("Fetching results for student:", req.params.studentId, "in quiz:", req.params.quizId);

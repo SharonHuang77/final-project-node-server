@@ -11,7 +11,7 @@ export async function findQuizzesForCourse(courseId) {
 
 export const findQuizById = async (quizId) => {
 
-  console.log("▶ Fetching quiz by ID:", quizId);
+  console.log("Fetching quiz by ID:", quizId);
   const quiz = await model.findById(quizId).lean();
   if (!quiz){
     console.log("Quiz not found for ID:", quizId);
@@ -47,16 +47,46 @@ export async function deleteQuiz(quizId) {
 
 export async function storeQuizResult(resultData) {
   try {
+    //add: Validate required fields
+    if (!resultData.studentId || !resultData.quizId) {
+      throw new Error("studentId and quizId are required");
+    }
+    
+    if (resultData.totalPoints === 0 || !resultData.totalPoints) {
+      throw new Error("totalPoints must be greater than 0");
+    } //add
     // Check how many attempts the student has made
     const previousAttempts = await resultModel.countDocuments({
       studentId: resultData.studentId,
       quizId: resultData.quizId
     });
+
+    // add: Check if quiz exists and get max attempts
+    const quiz = await model.findById(resultData.quizId).lean();
+    if (!quiz) {
+      throw new Error("Quiz not found");
+    }//add
+
+    // add: Check if max attempts exceeded
+    if (quiz.howManyAttempts && previousAttempts >= quiz.howManyAttempts) {
+      throw new Error(`Maximum attempts (${quiz.howManyAttempts}) exceeded`);
+    }//add
+
+    // add: Calculate percentage and grade
+    const percentage = Math.round((resultData.score / resultData.totalPoints) * 100);
+    let grade = 'F';
+    if (percentage >= 90) grade = 'A';
+    else if (percentage >= 80) grade = 'B';
+    else if (percentage >= 70) grade = 'C';
+    else if (percentage >= 60) grade = 'D'; //add
+  
+
     const newResult = await resultModel.create({
-      _id: uuidv4(), // ✅ custom ID
       ...resultData,
       attemptNumber: previousAttempts + 1,
-      percentage: (resultData.score / resultData.totalPoints) * 100
+      percentage,//fix
+      grade, //add
+      submittedAt: resultData.submittedAt || new Date() //add
     });
     return newResult;
   } catch (error) {
@@ -64,6 +94,7 @@ export async function storeQuizResult(resultData) {
     throw error;
   }
 }
+
 // Get student's results for a specific quiz
 // export async function findStudentQuizResults(studentId, quizId) {
 //   return await resultModel.find({ studentId, quizId }).sort({ submittedAt: -1 });
@@ -138,8 +169,7 @@ export const findStudentQuizResults = async (studentId, quizId) => {
     return formatted;
   };
 
-  // ─────────────────────────────
-  // 📦 Fetch: Get ALL attempts for this student and quiz
+  // Fetch: Get ALL attempts for this student and quiz
   const allResults = await resultModel.find({ studentId, quizId }).sort({ attemptNumber: -1 });
   
   if (!allResults || allResults.length === 0) {
@@ -155,8 +185,7 @@ export const findStudentQuizResults = async (studentId, quizId) => {
 
   const questions = await questionModel.find({ quiz: quizId });
 
-  // ─────────────────────────────
-  // 🧮 Score Calculation & Mapping
+  // Score Calculation & Mapping
   const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
   const questionMap = Object.fromEntries(questions.map(q => [q._id, q]));
 
@@ -165,22 +194,21 @@ export const findStudentQuizResults = async (studentId, quizId) => {
       const originalQuestion = questionMap[studentAnswer.questionId];
       return originalQuestion ? formatQuestion(originalQuestion, studentAnswer) : null;
     })
-    .filter(Boolean); // remove null entries
+    .filter(Boolean);
 
-  // ─────────────────────────────
-  // 📅 Quiz metadata
+  // Quiz metadata
   const availablePeriod = quiz.availableFromDate && quiz.availableUntilDate
     ? `${new Date(quiz.availableFromDate).toLocaleDateString()} – ${new Date(quiz.availableUntilDate).toLocaleDateString()}`
     : "N/A";
 
-  // Fix: Build attempt history from ALL results
+  // Build attempt history from ALL results
   const attemptHistory = allResults.map((result, index) => ({
     attempt: result.attemptNumber,
     score: result.score,
     timeUsed: formatTime(result.timeSpent),
     totalPoints,
     submittedAt: result.submittedAt,
-    isLatest: index === 0 // Mark the latest attempt
+    isLatest: index === 0
   }));
 
   const enrichedResult = {
@@ -204,12 +232,12 @@ export const findStudentQuizResults = async (studentId, quizId) => {
       submittedDate: new Date(latestResult.submittedAt).toLocaleDateString(),
       timeUsed: formatTime(latestResult.timeSpent),
     },
-    attemptHistory, // Now includes all attempts
+    attemptHistory,
     questions: enrichedQuestions,
   };
 
-  console.log("✅ Successfully enriched quiz result");
-  console.log("🔍 Debug - Attempt History:", attemptHistory);
+  console.log("Successfully enriched quiz result");
+  console.log("Debug - Attempt History:", attemptHistory);
   return enrichedResult;
 };
 
