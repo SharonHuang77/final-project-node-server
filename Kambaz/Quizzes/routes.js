@@ -37,7 +37,7 @@ export default function QuizRoutes(app) {
       const newQuiz = await dao.createQuiz(quiz);
       res.json(newQuiz);
     } catch (e) {
-      console.error("Create quiz error ▶", e);
+      console.error("Create quiz error", e);
       res.status(500).send(e.toString());
     }
   });
