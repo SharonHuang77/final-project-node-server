@@ -88,7 +88,8 @@ const resultSchema = new mongoose.Schema({
 }, 
 { 
   collection: "quizResults",
-  timestamps: true 
+  timestamps: true ,
+  _id:false
 });
 
 // Compound index to ensure unique attempts per student per quiz

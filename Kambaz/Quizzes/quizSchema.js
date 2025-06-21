@@ -34,7 +34,9 @@ const quizSchema = new mongoose.Schema(
     published: { type: Boolean, default: false, required: true },
     questions: [questionSchema],
   },
-  { collection: "quizzes" }
+  { collection: "quizzes",
+    _id: false
+   }
 );
 
 export default quizSchema;

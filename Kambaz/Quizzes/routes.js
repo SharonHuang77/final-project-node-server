@@ -1,4 +1,7 @@
 import * as dao from "./dao.js";
+import quizModel from "./model.js";
+import questionModel from "./Questions/model.js"
+import resultModel from "./resultModel.js";
 
 export default function QuizRoutes(app) {
   app.get("/api/courses/:courseId/quizzes", async (req, res) => {
@@ -122,20 +125,95 @@ export default function QuizRoutes(app) {
     }
   });
 
-app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
-  console.log("Fetching results for student:", req.params.studentId, "in quiz:", req.params.quizId);
-  try {
-    const { quizId, studentId } = req.params;
-    const results = await dao.findStudentQuizResults(studentId, quizId);
+// app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
+//   console.log("Fetching results for student:", req.params.studentId, "in quiz:", req.params.quizId);
+//   try {
+//     const { quizId, studentId } = req.params;
+//     const results = await dao.findStudentQuizResults(studentId, quizId);
     
-    if (!results) {
-      return res.status(404).json({ error: "Result not found" });
+//     if (!results) {
+//       return res.status(404).json({ error: "Result not found" });
+//     }
+
+//     res.json(results);
+//   } catch (error) {
+//     console.error("Error fetching student results:", error);
+//     res.status(500).json({ error: "Failed to fetch results" });
+//   }
+// });
+
+app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
+  const { quizId, studentId } = req.params;
+  console.log("📥 Fetching results for student:", studentId, "in quiz:", quizId);
+
+  try {
+    // Validate input parameters
+    if (!quizId || !studentId) {
+      return res.status(400).json({ error: "Quiz ID and Student ID are required" });
     }
 
-    res.json(results);
+    // Get quiz data
+    const quiz = await quizModel.findOne({ _id: quizId });
+    if (!quiz) {
+      console.error("❌ Quiz not found:", quizId);
+      return res.status(404).json({ error: "Quiz not found" });
+    }
+    console.log("✅ Found quiz:", quiz.title);
+
+    // Get questions for the quiz
+    const questions = await questionModel.find({ quiz: quizId });
+    if (!questions || questions.length === 0) {
+      console.warn("⚠️ No questions found for quiz:", quizId);
+      return res.status(404).json({ error: "No questions found for this quiz" });
+    }
+    console.log("✅ Found questions:", questions.length);
+
+    const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
+
+    // Get student results
+    const results = await dao.findStudentQuizResults(studentId, quizId);
+    
+    if (!results || results.length === 0) {
+      console.warn("⚠️ No results found for student:", studentId);
+      return res.status(404).json({ error: "No quiz attempts found for this student" });
+    }
+
+    console.log("✅ Found results:", results.length);
+
+    // Build response
+    const response = {
+      title: quiz.title,
+      dueDate: quiz.dueDate || "No due date set",
+      points: totalPoints,
+      totalQuestions: questions.length,
+      availablePeriod: quiz.availableFromDate && quiz.availableUntilDate 
+        ? `${new Date(quiz.availableFromDate).toDateString()} - ${new Date(quiz.availableUntilDate).toDateString()}`
+        : "Always available",
+      timeLimit: quiz.timeLimit ? `${quiz.timeLimitMinutes || 30} minutes` : "Unlimited",
+      instructions: {
+        title: "Before You Begin",
+        guidelines: [
+          "You must complete the quiz in one sitting.",
+          "Once started, the timer cannot be paused.",
+        ],
+      },
+      lockDate: quiz.availableUntilDate 
+        ? new Date(quiz.availableUntilDate).toDateString()
+        : "No lock date",
+      multipleAttempts: quiz.multipleAttempts || false,
+      maxAttempts: quiz.howManyAttempts || 1,
+      currentAttempt: results[0],       // most recent
+      attemptHistory: results,          // full history
+    };
+
+    res.json(response);
+
   } catch (error) {
-    console.error("Error fetching student results:", error);
-    res.status(500).json({ error: "Failed to fetch results" });
+    console.error("❌ Error fetching student results:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch results", 
+      details: error.message 
+    });
   }
 });
 
