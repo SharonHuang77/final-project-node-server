@@ -49,8 +49,7 @@ export async function storeQuizResult(resultData) {
   try {
     console.log("📥 Received quiz result submission:", resultData);
 
-    // ───────────────
-    // ✅ Step 1: Validate required fields
+    // Validate required fields
     if (!resultData.studentId || !resultData.quizId) {
       throw new Error("studentId and quizId are required");
     }
@@ -67,8 +66,7 @@ export async function storeQuizResult(resultData) {
       throw new Error("totalPoints must be a positive number");
     }
 
-    // ───────────────
-    // ✅ Step 2: Fetch quiz and attempt count
+    // Fetch quiz and attempt count
     const quiz = await model.findById(resultData.quizId).lean();
     if (!quiz) {
       throw new Error("Quiz not found");
@@ -79,14 +77,12 @@ export async function storeQuizResult(resultData) {
       quizId: resultData.quizId
     });
 
-    // ───────────────
-    // ✅ Step 3: Enforce attempt limits
+    // Enforce attempt limits
     if (quiz.howManyAttempts && previousAttempts >= quiz.howManyAttempts) {
       throw new Error(`Maximum attempts (${quiz.howManyAttempts}) exceeded`);
     }
 
-    // ───────────────
-    // ✅ Step 4: Calculate percentage and grade
+    // Calculate percentage and grade
     const percentage = Math.round((resultData.score / resultData.totalPoints) * 100);
     let grade = "F";
     if (percentage >= 90) grade = "A";
@@ -94,8 +90,8 @@ export async function storeQuizResult(resultData) {
     else if (percentage >= 70) grade = "C";
     else if (percentage >= 60) grade = "D";
 
-    // ───────────────
-    // ✅ Step 5: Create the result entry
+
+    // Create the result entry
     const newResult = await resultModel.create({
       _id: uuidv4(),
       ...resultData,
@@ -109,15 +105,10 @@ export async function storeQuizResult(resultData) {
     return newResult;
 
   } catch (error) {
-    console.error("❌ Error storing quiz result:", error.message);
-    throw error; // Will be caught and returned as 400 or 500 in the route handler
+    console.error("Error storing quiz result:", error.message);
+    throw error;
   }
 }
-
-// Get student's results for a specific quiz
-// export async function findStudentQuizResults(studentId, quizId) {
-//   return await resultModel.find({ studentId, quizId }).sort({ submittedAt: -1 });
-// }
 
 export const findStudentQuizResults = async (studentId, quizId) => {
   try {
@@ -156,11 +147,10 @@ export const findStudentQuizResults = async (studentId, quizId) => {
     }
     
     if (!allResults || allResults.length === 0) {
-      console.warn("⚠️ No results found with any query variation");
+      console.warn("No results found with any query variation");
       
-      // Let's also check what's actually in the database
       const sampleResults = await resultModel.find({}).limit(3);
-      console.log("📊 Sample database entries:", sampleResults.map(r => ({
+      console.log("Sample database entries:", sampleResults.map(r => ({
         studentId: r.studentId,
         studentIdType: typeof r.studentId,
         quizId: r.quizId,
@@ -173,14 +163,14 @@ export const findStudentQuizResults = async (studentId, quizId) => {
     // Get quiz data
     const quiz = await quizModel.findById(quizId);
     if (!quiz) {
-      console.error("❌ Quiz not found:", quizId);
+      console.error("Quiz not found:", quizId);
       throw new Error("Quiz not found");
     }
 
     // Get questions
     const questions = await questionModel.find({ quiz: quizId });
     if (!questions || questions.length === 0) {
-      console.warn("⚠️ No questions found for quiz:", quizId);
+      console.warn("No questions found for quiz:", quizId);
       return [];
     }
 
@@ -189,7 +179,7 @@ export const findStudentQuizResults = async (studentId, quizId) => {
 
     const formatQuestion = (originalQuestion, studentAnswer) => {
       if (!originalQuestion || !studentAnswer) {
-        console.warn("⚠️ Missing question or answer data");
+        console.warn("Missing question or answer data");
         return null;
       }
 
@@ -236,7 +226,7 @@ export const findStudentQuizResults = async (studentId, quizId) => {
     // Process each result
     const enrichedResults = allResults.map((result) => {
       if (!result.answers || !Array.isArray(result.answers)) {
-        console.warn("⚠️ Result has no answers array:", result._id);
+        console.warn("Result has no answers array:", result._id);
         return {
           score: result.score || 0,
           submittedDate: new Date(result.submittedAt).toLocaleDateString(),
@@ -250,13 +240,13 @@ export const findStudentQuizResults = async (studentId, quizId) => {
       const enrichedQuestions = result.answers
         .map((studentAnswer) => {
           if (!studentAnswer.questionId) {
-            console.warn("⚠️ Answer missing questionId:", studentAnswer);
+            console.warn("Answer missing questionId:", studentAnswer);
             return null;
           }
           
           const originalQuestion = questionMap[studentAnswer.questionId.toString()];
           if (!originalQuestion) {
-            console.warn("⚠️ Question not found for ID:", studentAnswer.questionId);
+            console.warn("Question not found for ID:", studentAnswer.questionId);
             return null;
           }
           
@@ -274,11 +264,11 @@ export const findStudentQuizResults = async (studentId, quizId) => {
       };
     });
 
-    console.log("✅ Returning enriched results:", enrichedResults.length);
+    console.log("Returning enriched results:", enrichedResults.length);
     return enrichedResults;
 
   } catch (error) {
-    console.error("❌ Error in findStudentQuizResults:", error);
+    console.error("Error in findStudentQuizResults:", error);
     throw error;
   }
 };

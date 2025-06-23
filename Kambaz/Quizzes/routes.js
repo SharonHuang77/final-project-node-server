@@ -55,7 +55,6 @@ export default function QuizRoutes(app) {
     res.json(await dao.deleteQuiz(quizId));
   });
 
-  //s Submit quiz result
   app.post("/api/quizzes/:quizId/results", async (req, res) => {
     try {
     const { quizId } = req.params;
@@ -125,26 +124,9 @@ export default function QuizRoutes(app) {
     }
   });
 
-// app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
-//   console.log("Fetching results for student:", req.params.studentId, "in quiz:", req.params.quizId);
-//   try {
-//     const { quizId, studentId } = req.params;
-//     const results = await dao.findStudentQuizResults(studentId, quizId);
-    
-//     if (!results) {
-//       return res.status(404).json({ error: "Result not found" });
-//     }
-
-//     res.json(results);
-//   } catch (error) {
-//     console.error("Error fetching student results:", error);
-//     res.status(500).json({ error: "Failed to fetch results" });
-//   }
-// });
-
 app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
   const { quizId, studentId } = req.params;
-  console.log("📥 Fetching results for student:", studentId, "in quiz:", quizId);
+  console.log("Fetching results for student:", studentId, "in quiz:", quizId);
 
   try {
     // Validate input parameters
@@ -155,18 +137,18 @@ app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
     // Get quiz data
     const quiz = await quizModel.findOne({ _id: quizId });
     if (!quiz) {
-      console.error("❌ Quiz not found:", quizId);
+      console.error("Quiz not found:", quizId);
       return res.status(404).json({ error: "Quiz not found" });
     }
-    console.log("✅ Found quiz:", quiz.title);
+    console.log("Found quiz:", quiz.title);
 
     // Get questions for the quiz
     const questions = await questionModel.find({ quiz: quizId });
     if (!questions || questions.length === 0) {
-      console.warn("⚠️ No questions found for quiz:", quizId);
+      console.warn("No questions found for quiz:", quizId);
       return res.status(404).json({ error: "No questions found for this quiz" });
     }
-    console.log("✅ Found questions:", questions.length);
+    console.log("Found questions:", questions.length);
 
     const totalPoints = questions.reduce((sum, q) => sum + (q.points || 1), 0);
 
@@ -174,11 +156,11 @@ app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
     const results = await dao.findStudentQuizResults(studentId, quizId);
     
     if (!results || results.length === 0) {
-      console.warn("⚠️ No results found for student:", studentId);
+      console.warn("No results found for student:", studentId);
       return res.status(404).json({ error: "No quiz attempts found for this student" });
     }
 
-    console.log("✅ Found results:", results.length);
+    console.log("Found results:", results.length);
 
     // Build response
     const response = {
@@ -209,7 +191,7 @@ app.get("/api/quizzes/:quizId/results/:studentId", async (req, res) => {
     res.json(response);
 
   } catch (error) {
-    console.error("❌ Error fetching student results:", error);
+    console.error("Error fetching student results:", error);
     res.status(500).json({ 
       error: "Failed to fetch results", 
       details: error.message 
